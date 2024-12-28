@@ -50,7 +50,7 @@ def login():
             print("Incorrect password.")
     else:
         print("No account found with this email.")
-         return None
+    return None
 # Create a Post
 def create_post(user_id):
     content = input("Enter your post content: ")
