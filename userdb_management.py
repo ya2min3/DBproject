@@ -1,7 +1,5 @@
-import sqlite3
-import bcrypt
 import psycopg2
-from datetime import datetime
+import bcrypt
 
 # Connection credentials
 DATABASE_CONFIG = {
@@ -11,8 +9,7 @@ DATABASE_CONFIG = {
     "password": "Vomobdd23_"
 }
 
- 
-#create users table
+# Create users table
 def create_users_table():
     try:
         conn = psycopg2.connect(
@@ -40,11 +37,10 @@ def create_users_table():
         if conn:
             conn.close()
 
-
-# Sign-Up function: Stores the new user's info in the database and returns True, or returns False if the email is already in use
+# Sign-Up function: Stores the new user's info in the database
 def sign_up(name, email, password):
     # Hash the password
-    hashed_password = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt())
+    hashed_password = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')  # Encode and hash the password
     try:
         conn = psycopg2.connect(
             dbname=DATABASE_CONFIG["database"],
@@ -56,58 +52,58 @@ def sign_up(name, email, password):
         cursor.execute('''
             INSERT INTO Users (name, email, password) 
             VALUES (%s, %s, %s)
-        ''', (name, email, hashed_password))
+        ''', (name, email, hashed_password))  # Store the hashed password
         conn.commit()
         conn.close()
         return True
-    except sqlite3.IntegrityError:
+    except psycopg2.IntegrityError:
         print("An account with this email already exists.")
         return False
 
 # Login function
 def login(email, password):
     conn = psycopg2.connect(
-            dbname=DATABASE_CONFIG["database"],
-            user=DATABASE_CONFIG["user"],
-            password=DATABASE_CONFIG["password"],
-            host=DATABASE_CONFIG["host"]
-        )
+        dbname=DATABASE_CONFIG["database"],
+        user=DATABASE_CONFIG["user"],
+        password=DATABASE_CONFIG["password"],
+        host=DATABASE_CONFIG["host"]
+    )
     cursor = conn.cursor()
     cursor.execute('''
-        SELECT password FROM Users WHERE email = ?
+        SELECT password FROM Users WHERE email = %s
     ''', (email,))
     result = cursor.fetchone()
     conn.close()
 
     if result:
         stored_password = result[0]
-        if bcrypt.checkpw(password.encode('utf-8'), stored_password):
+        # Check the password against the stored hashed password
+        if bcrypt.checkpw(password.encode('utf-8'), stored_password.encode('utf-8')):  # Make sure both are encoded
             return True
-        else: # Passwords don't match
+        else:
             return False    
     else:
         return False
 
+# Get User ID
 def get_userid(email):
     conn = psycopg2.connect(
-            dbname=DATABASE_CONFIG["database"],
-            user=DATABASE_CONFIG["user"],
-            password=DATABASE_CONFIG["password"],
-            host=DATABASE_CONFIG["host"]
-        )
+        dbname=DATABASE_CONFIG["database"],
+        user=DATABASE_CONFIG["user"],
+        password=DATABASE_CONFIG["password"],
+        host=DATABASE_CONFIG["host"]
+    )
     cursor = conn.cursor()
     cursor.execute('''
-        SELECT id FROM Users WHERE email = ?
+        SELECT id FROM Users WHERE email = %s
     ''', (email,))
     result = cursor.fetchone()
     conn.close()
 
     if result:
-        return result
+        return result[0]  # Return user ID
     else:
         return None
-
-
 
 
 

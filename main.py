@@ -92,17 +92,17 @@ class SignupPage(QWidget):
             QMessageBox.warning(self, "Input Error", "All fields are required.")
             return
 
-        if '@' not in email:
+        if '@' not in email or '.' not in email:
             QMessageBox.warning(self, "Input Error", "Please enter a valid email address.")
             return
-
+        
         if len(password) < 8 or not any(char.isdigit() for char in password):
             QMessageBox.warning(self, "Input Error", "Password must be at least 8 characters long and include a number.")
             return
 
         if userdb_management.sign_up(name, email, password):
             QMessageBox.information(self, "Success", "Sign-Up successful!")
-            self.go_profile()
+            self.go_profile(email)
         else:
             QMessageBox.warning(self, "Error", "An account with this email already exists.")
 
@@ -110,8 +110,10 @@ class SignupPage(QWidget):
         self.home_page = HomePage()
         self.home_page.show()
         self.close()
-    def go_profile(self):
-        self.profile_page = ProfilePage()
+        
+    def go_profile(self, email):
+        user_id = userdb_management.get_userid(email)
+        self.profile_page = ProfilePage(user_id)
         self.profile_page.show()
         self.close()
 
@@ -153,7 +155,7 @@ class LoginPage(QWidget):
         user_id = userdb_management.login(email, password)
         if user_id:
             QMessageBox.information(self, "Success", "Login successful!")
-            self.open_profile(email)
+            self.open_profile(user_id)
         else:
             QMessageBox.warning(self, "Login Failed", "Invalid email or password.")
 
@@ -162,8 +164,7 @@ class LoginPage(QWidget):
         self.home_page.show()
         self.close()
 
-    def open_profile(email):
-        user_id = userdb_management.get_userid(email)
+    def open_profile(self, user_id):
         self.profile_page = ProfilePage(user_id)
         self.profile_page.show()
         self.close()
