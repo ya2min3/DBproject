@@ -21,10 +21,10 @@ def search_results(search_params):
     try:
         # Connect to the PostgreSQL database
         conn = psycopg2.connect(
-            dbname="db",
-            user="jass",
-            password="Vomobdd23_",
-            host="localhost"
+            dbname=DATABASE_CONFIG["database"],
+            user=DATABASE_CONFIG["user"],
+            password=DATABASE_CONFIG["password"],
+            host=DATABASE_CONFIG["host"]
         )
         cursor = conn.cursor()
         
