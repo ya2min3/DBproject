@@ -9,17 +9,8 @@ DATABASE_CONFIG = {
     "password": "Vomobdd23_"
 }
 
-def search_bar():
-    # Get input from the user
-    user_input = input("Search for job offers:")
-    # Split the input parameters into a list
-    search_params = user_input.split()
-    return search_params
-
-
-def search_results(search_params):
+def search_jobs(search_params):
     try:
-        # Connect to the PostgreSQL database
         conn = psycopg2.connect(
             dbname=DATABASE_CONFIG["database"],
             user=DATABASE_CONFIG["user"],
@@ -34,7 +25,7 @@ def search_results(search_params):
         # Create a query to check for keywords in the job descriptions
         for keyword in search_params:
             query = """
-            SELECT designation FROM jobs
+            SELECT job_ID, designation, name, work_type, involvement, City, State FROM jobs
             WHERE job_details ILIKE %s;
             """
             cursor.execute(query, (f"%{keyword}%",))
@@ -54,4 +45,39 @@ def search_results(search_params):
     finally:
         if conn:
             cursor.close()
+            conn.close()
+
+#displays the job informations
+import psycopg2
+
+DATABASE_CONFIG = {
+    "database": "db",
+    "user": "jass",
+    "host": "localhost",
+    "password": "Vomobdd23_"
+}
+
+def job_details(id):
+    try:
+        conn = psycopg2.connect(
+            dbname=DATABASE_CONFIG["database"],
+            user=DATABASE_CONFIG["user"],
+            password=DATABASE_CONFIG["password"],
+            host=DATABASE_CONFIG["host"]
+        )
+        with conn:
+            with conn.cursor() as cursor:
+                cursor.execute('''
+                    SELECT job_details
+                    FROM Jobs 
+                    WHERE job_ID ILIKE %s
+                ''', (f'%{id}%'))
+                
+                results = cursor.fetchall()
+                return results 
+    except psycopg2.Error as e:
+        print(f"An error occurred while searching for job details: {e}")
+        return []
+    finally:
+        if conn:
             conn.close()

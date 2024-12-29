@@ -2,6 +2,7 @@ import sys
 from PyQt5.QtWidgets import *
 from PyQt5.QtGui import QFont
 import userdb_management 
+import jobsdb_management
 
 # Create the user table
 userdb_management.create_users_table()
@@ -231,9 +232,109 @@ class ProfilePage(QWidget):
                 QMessageBox.warning(self, "Error", "Failed to upload CV.")
 
     def search_jobs(self):
-        # Logic for searching for jobs
-        self.jobs_search_page = JobsSearchPage()
+        self.jobs_search_page = JobsSearchPage(self.user_id)
         self.jobs_search_page.show()
+        self.close()
+
+
+class JobsSearchPage(QWidget):
+    def __init__(self, user_id):
+        super().__init__()
+        self.user_id = user_id
+        self.setWindowTitle("Search for Jobs")
+        self.setGeometry(100, 100, 1000, 600)  # Increase window height for better layout
+        layout = QVBoxLayout()
+
+        title = QLabel("Search for Jobs", self)
+        title.setFont(QFont('Arial', 20))
+
+        search_button = QPushButton('Search', self)
+        help_button = QPushButton('How to apply?', self)
+        profile_button = QPushButton('Go back to Profile', self)
+        signout_button = QPushButton('Sign out', self)
+
+        search_button.clicked.connect(self.search)
+        help_button.clicked.connect(self.help)
+        profile_button.clicked.connect(self.go_profile)
+        signout_button.clicked.connect(self.go_home)
+
+        # Results table
+        self.results_table = QTableWidget(self)
+        self.results_table.setColumnCount(7)  # Number of columns for job details
+        self.results_table.setHorizontalHeaderLabels(["Job ID", "Title", "Company", "Type", "Involvement", "City", "State"])
+        self.results_table.setFixedHeight(300)  # Set a fixed height for the table
+        self.results_table.setMinimumWidth(900)  # Set a minimum width for the table
+
+        layout.addWidget(title)
+        layout.addWidget(QLabel("Enter keywords for job:", self))
+        self.keyword_input = QLineEdit(self)
+        layout.addWidget(self.keyword_input)
+        layout.addWidget(search_button)
+        layout.addWidget(help_button)
+        layout.addWidget(signout_button)
+        layout.addWidget(profile_button)
+        layout.addWidget(self.results_table)  # Add the results table to the layout
+
+        self.setLayout(layout)
+
+        # Connect double-click event to show job details:
+        self.results_table.cellDoubleClicked.connect(self.show_job_details)
+
+    def search(self):
+        keyword = self.keyword_input.text().strip()
+        if not keyword:
+            QMessageBox.warning(self, "Input Error", "Please enter a keyword.")
+            return
+        
+        # Call the search function and retrieve results
+        results = jobsdb_management.search_jobs(keyword)
+        
+        # Clear previous results in the table
+        self.results_table.setRowCount(0)
+
+        if results:
+            # Populate the table with search results
+            self.results_table.setRowCount(len(results))
+            for row_index, row_data in enumerate(results):
+                for column_index, data in enumerate(row_data):
+                    self.results_table.setItem(row_index, column_index, QTableWidgetItem(str(data)))
+        else:
+            QMessageBox.information(self, "No Results", "No jobs found for the given keyword.")
+    
+    def show_job_details(self, row, column):
+        job_id_item = self.results_table.item(row, 0)  # Get the job ID item
+        if job_id_item:
+            job_id = job_id_item.text()
+            job_details = jobsdb_management.get_job_details(job_id)  # Fetch job details from DB
+
+            if job_details != []:
+                # Create a message box to display job details
+                msg_box = QMessageBox(self)
+                msg_box.setWindowTitle("Job Description")
+                msg_box.setText(job_details)
+                msg_box.setIcon(QMessageBox.Information)
+
+                # Add an "Apply" button to the message box
+                apply_button = msg_box.addButton("Apply", QMessageBox.AcceptRole)
+                msg_box.exec_()
+                # If the user clicks the "Apply" button, handle the application
+                if msg_box.clickedButton() == apply_button:
+                    self.apply_for_job(job_id)  # Call the apply function
+
+    def apply_for_job(self, job_id):
+        QMessageBox.information(self, "Application Sent", f"You have applied for the job!")
+
+    def help(self):
+        QMessageBox.information(self, "How to apply?", "To apply for a job, just double-click on it!")
+
+    def go_home(self):
+        self.home_page = HomePage()
+        self.home_page.show()
+        self.close()
+    
+    def go_profile(self):
+        self.profile_page = ProfilePage(self.user_id)
+        self.profile_page.show()
         self.close()
 
 
