@@ -9,44 +9,45 @@ DATABASE_CONFIG = {
     "password": "Vomobdd23_"
 }
 
-def search_jobs(search_params):
+def search_bar():
+    # Get input from the user
+    user_input = input("Search for job offers:")
+    # Split the input parameters into a list
+    search_params = user_input.split()
+    return search_params
+
+
+def search_results(search_params):
     try:
-        # Connect to the database
-        conn = psycopg2.connect(**DATABASE_CONFIG)
+        # Connect to the PostgreSQL database
+        conn = psycopg2.connect(
+            dbname="db",
+            user="jass",
+            password="Vomobdd23_",
+            host="localhost"
+        )
         cursor = conn.cursor()
-
-        # Base SQL query
-        query = """
-        SELECT designation, name, work_type, involvement, industry, city, state
-        FROM jobs
-        WHERE 1=1
-        """
-        values = []
-
-        # Add filters dynamically based on user input
-        if 'keywords' in search_params:
-            query += " AND (designation ILIKE %s OR work_type ILIKE %s OR involvement ILIKE %s)"
-            keyword = f"%{search_params['keywords']}%"
-            values.extend([keyword, keyword, keyword])
-
-        if 'location' in search_params:
-            query += " AND (city ILIKE %s OR state ILIKE %s)"  # Grouped with parentheses
-            location = f"%{search_params['location']}%"
-            values.extend([location, location])  # Two placeholders for city and state
-
-        if 'field' in search_params:
-            query += " AND industry ILIKE %s"
-            values.append(f"%{search_params['field']}%")
-
-        if 'company' in search_params:
-            query += " AND name ILIKE %s"
-            values.append(f"%{search_params['company']}%")
-
-        # Execute the query with the collected values
-        cursor.execute(query, tuple(values))
-        jobs = cursor.fetchall()
-
-        return jobs
+        
+        # Prepare a list to store the matching job offers
+        matching_jobs = []
+        
+        # Create a query to check for keywords in the job descriptions
+        for keyword in search_params:
+            query = """
+            SELECT designation FROM jobs
+            WHERE job_details ILIKE %s;
+            """
+            cursor.execute(query, (f"%{keyword}%",))
+            # Fetch all matching rows
+            rows = cursor.fetchall()
+            # Add the rows to the matching_jobs list
+            matching_jobs.extend(rows)
+        # Close the cursor and connection
+        cursor.close()
+        conn.close()
+        
+        return matching_jobs
+    
     except psycopg2.Error as e:
         print(f"Database error: {e}")
         return []
