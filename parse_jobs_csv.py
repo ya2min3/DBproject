@@ -1,5 +1,5 @@
+#used to create sql insert statements from csv file, all saved in jobs_data.sql
 import csv
-
 # Open the CSV file
 with open('jobs.csv', 'r', encoding='utf-8') as csvfile:
     reader = csv.reader(csvfile, quotechar='"', skipinitialspace=True)  # Use quotechar to handle quotes in fields
