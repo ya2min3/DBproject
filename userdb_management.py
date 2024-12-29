@@ -26,7 +26,7 @@ def create_users_table():
                         name VARCHAR(255) NOT NULL,
                         email VARCHAR(320) UNIQUE NOT NULL,
                         password VARCHAR(255) NOT NULL,
-                        photo_path TEXT,
+                        description TEXT,
                         cv_path TEXT
                     );
                 ''')
@@ -105,10 +105,58 @@ def get_userid(email):
     else:
         return None
 
+# Get User Name
+def get_username(id):
+    conn = psycopg2.connect(
+        dbname=DATABASE_CONFIG["database"],
+        user=DATABASE_CONFIG["user"],
+        password=DATABASE_CONFIG["password"],
+        host=DATABASE_CONFIG["host"]
+    )
+    cursor = conn.cursor()
+    cursor.execute('''
+        SELECT name FROM Users WHERE id = %s
+    ''', (id,))
+    result = cursor.fetchone()
+    conn.close()
 
+    if result:
+        return result[0]  # Return user name
+    else:
+        return None
 
+#update user description
 
+def update_description(user_id, description):
+    conn = psycopg2.connect(
+        dbname=DATABASE_CONFIG["database"],
+        user=DATABASE_CONFIG["user"],
+        password=DATABASE_CONFIG["password"],
+        host=DATABASE_CONFIG["host"]
+    )
+    cursor = conn.cursor()
+    cursor.execute('''
+        UPDATE Users SET description = %s WHERE id = %s
+    ''', (description, user_id))
+    conn.commit()
+    conn.close()
+    return True
 
+#update user cv
+def update_cv(user_id, cv_path):
+    conn = psycopg2.connect(
+        dbname=DATABASE_CONFIG["database"],
+        user=DATABASE_CONFIG["user"],
+        password=DATABASE_CONFIG["password"],
+        host=DATABASE_CONFIG["host"]
+    )
+    cursor = conn.cursor()
+    cursor.execute('''
+        UPDATE Users SET cv_path = %s WHERE id = %s
+    ''', (cv_path, user_id))
+    conn.commit()
+    conn.close()
+    return True
 
 
 #A modifier:--------------------------------------------------------------------------------------------------

@@ -152,12 +152,14 @@ class LoginPage(QWidget):
         email = self.email_input.text().strip()
         password = self.password_input.text().strip()
 
-        user_id = userdb_management.login(email, password)
-        if user_id:
+        success = userdb_management.login(email, password)
+        user_id = userdb_management.get_userid(email)
+        if success:
             QMessageBox.information(self, "Success", "Login successful!")
             self.open_profile(user_id)
         else:
             QMessageBox.warning(self, "Login Failed", "Invalid email or password.")
+        
 
     def go_home(self):
         self.home_page = HomePage()
@@ -173,17 +175,67 @@ class LoginPage(QWidget):
 class ProfilePage(QWidget):
     def __init__(self, user_id):
         super().__init__()
-        self.user_id = user_id  # Store the user's ID for fetching user-specific data
+        self.user_id = user_id  # Store the user's ID
+        self.username = userdb_management.get_username(user_id)
         self.setWindowTitle("Profile")
         self.setGeometry(100, 100, 1000, 500)
         layout = QVBoxLayout()
 
-        title = QLabel(f"Welcome to your profile page, User {self.user_id}!", self)
+        title = QLabel(f"Welcome to your profile page, {self.username}!", self)
         title.setFont(QFont('Arial', 20))
 
+        # Buttons
+        self.add_description_button = QPushButton('Add/Modify your description', self)
+        self.add_cv_button = QPushButton('Add CV', self)
+        self.search_jobs_button = QPushButton('Search for Jobs', self)
+        self.sign_out_button = QPushButton('Sign Out', self)
+
+        #functions
+        self.sign_out_button.clicked.connect(self.sign_out)
+        self.add_description_button.clicked.connect(self.add_modify_description)
+        self.add_cv_button.clicked.connect(self.add_cv)
+        self.search_jobs_button.clicked.connect(self.search_jobs)
+
+        # Add widgets to layout
         layout.addWidget(title)
+        layout.addWidget(self.sign_out_button)
+        layout.addWidget(self.add_description_button)
+        layout.addWidget(self.add_cv_button)
+        layout.addWidget(self.search_jobs_button)
+
         self.setLayout(layout)
-    
+
+    def sign_out(self):
+        self.home_page = HomePage() 
+        self.home_page.show()
+        self.close()
+
+    def add_modify_description(self):
+        text, ok = QInputDialog.getText(self, "Add/Modify Description", "Enter your description:")
+        if ok and text:
+            # Save the description to the database
+            success = userdb_management.update_description(self.user_id, text) 
+            if success:
+                QMessageBox.information(self, "Success", "Description updated successfully!")
+            else:
+                QMessageBox.warning(self, "Error", "Failed to update description.")
+
+    def add_cv(self):
+        options = QFileDialog.Options()
+        file_path, _ = QFileDialog.getOpenFileName(self, "Select CV File", "", "PDF Files (*.pdf);;Word Files (*.docx);;All Files (*)", options=options)
+        if file_path:
+            success = userdb_management.update_cv(self.user_id, file_path) 
+            if success:
+                QMessageBox.information(self, "Success", "CV uploaded successfully!")
+            else:
+                QMessageBox.warning(self, "Error", "Failed to upload CV.")
+
+    def search_jobs(self):
+        # Logic for searching for jobs
+        self.jobs_search_page = JobsSearchPage()
+        self.jobs_search_page.show()
+        self.close()
+
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
