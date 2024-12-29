@@ -1,3 +1,4 @@
+#For when user uses the search bar to look for jobs
 import psycopg2
 
 # Connection credentials
