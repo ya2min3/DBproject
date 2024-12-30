@@ -72,8 +72,8 @@ def search_jobs(search_params):
         if 'conn' in locals() and conn:
             conn.close()
 
-
-def job_details(id):
+def get_job_details(id):
+    print("ID: ", id)
     try:
         conn = psycopg2.connect(
             dbname=DATABASE_CONFIG["database"],
@@ -86,8 +86,8 @@ def job_details(id):
                 cursor.execute('''
                     SELECT job_details
                     FROM Jobs 
-                    WHERE job_ID ILIKE %s
-                ''', (f'%{id}%'))
+                    WHERE job_ID = %s
+                ''', (id,))  # Use the equality operator and pass the id as a tuple
                 
                 results = cursor.fetchall()
                 return results 
