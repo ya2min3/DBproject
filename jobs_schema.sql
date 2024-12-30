@@ -14,6 +14,5 @@ create table jobs (
     level text,
     City text,
     State text,
-    PRIMARY KEY (job_ID),
-    FOREIGN KEY (company_id) REFERENCES users(id)
+    PRIMARY KEY (job_ID)
 );

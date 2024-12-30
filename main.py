@@ -4,13 +4,28 @@ from PyQt5.QtGui import QFont
 import userdb_management 
 import jobsdb_management
 import parse_jobs_csv
+import subprocess
+
 
 # Create the user table
 userdb_management.create_users_table()
 # Create the jobs table
 jobsdb_management.create_jobs_table()
-# Fill the jobs table with data from the CSV file
-parse_jobs_csv.parse_jobs()
+# Check if the jobs table is empty
+if jobsdb_management.is_jobs_table_empty():  # Function to check if the table is empty
+    # Create file jobs_data.sql
+    with open('jobs_data.sql', 'w') as output_file:
+    # Execute the command and redirect the output to the file
+        result = subprocess.run(['python3', 'parse_jobs_csv.py'], stdout=output_file, stderr=subprocess.PIPE)
+    # Check for errors
+    if result.returncode == 0:
+        print("Command executed successfully, output written to jobs_data.sql")
+        # Execute file to fill table:
+        jobsdb_management.fill_jobs_table()
+    else:
+        print("Command failed with return code:", result.returncode)
+        print("Error:", result.stderr.decode())
+    
 
 #Application Home Page
 class HomePage(QWidget):

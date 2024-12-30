@@ -36,11 +36,58 @@ def create_jobs_table():
                         level text,
                         City text,
                         State text,
-                        PRIMARY KEY (job_ID),
-                        FOREIGN KEY (company_id) REFERENCES users(id)
+                        PRIMARY KEY (job_ID)
                     );
                 ''')
         print("Table 'Jobs' created successfully or already exists.")
+    except psycopg2.Error as e:
+        print(f"An error occurred: {e}")
+    finally:
+        if conn:
+            conn.close()
+
+# function to verify if the jobs table is empty
+def is_jobs_table_empty():
+    try:
+        conn = psycopg2.connect(
+            dbname=DATABASE_CONFIG["database"],
+            user=DATABASE_CONFIG["user"],
+            password=DATABASE_CONFIG["password"],
+            host=DATABASE_CONFIG["host"]
+        )
+        cursor = conn.cursor()
+        cursor.execute("SELECT COUNT(*) FROM Jobs;") 
+        count = cursor.fetchone()[0] 
+        return count == 0 
+    
+    except Exception as e:
+        print(f"Error checking if jobs table is empty: {e}")
+        return True  
+
+    finally:
+        if cursor:
+            cursor.close()
+        if conn:
+            conn.close()
+
+
+def fill_jobs_table():
+    try:
+        conn = psycopg2.connect(
+            dbname=DATABASE_CONFIG["database"],
+            user=DATABASE_CONFIG["user"],
+            password=DATABASE_CONFIG["password"],
+            host=DATABASE_CONFIG["host"]
+        )
+        with conn:
+            with conn.cursor() as cursor:
+                # Read the SQL file
+                with open('jobs_data.sql', 'r') as file:
+                    sql_commands = file.read()
+                
+                # Execute the SQL commands
+                cursor.execute(sql_commands)
+                print("Jobs table filled successfully.")
     except psycopg2.Error as e:
         print(f"An error occurred: {e}")
     finally:
@@ -74,14 +121,14 @@ def search_jobs(search_params):
             where_clause = " OR ".join(where_clauses)
             query = f"""
             SELECT job_ID, designation, name, work_type, involvement, City, State 
-            FROM jobs
+            FROM Jobs
             WHERE {where_clause};
             """
         else:
             # If no search parameters are provided, return jobs with designation "Other"
             query = """
             SELECT job_ID, designation, name, work_type, involvement, City, State 
-            FROM jobs
+            FROM Jobs
             WHERE designation = 'Other';
             """
             params = []  # No parameters needed for this query
@@ -123,7 +170,8 @@ def get_job_details(id):
             with conn.cursor() as cursor:
                 cursor.execute('''
                     SELECT job_details
-                    FROM Jobs 
+                    FROM Jobs
+     
                     WHERE job_ID = %s
                 ''', (id,))  # Use the equality operator and pass the id as a tuple
                 
