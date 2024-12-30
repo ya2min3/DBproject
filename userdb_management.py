@@ -27,6 +27,7 @@ def create_users_table():
                         email VARCHAR(320) UNIQUE NOT NULL,
                         password VARCHAR(255) NOT NULL,
                         description TEXT,
+                        photo_path TEXT,
                         cv_path TEXT
                     );
                 ''')
@@ -125,8 +126,26 @@ def get_username(id):
     else:
         return None
 
-#update user description
+# Get User Description
+def get_description(user_id):
+    conn = psycopg2.connect(
+        dbname=DATABASE_CONFIG["database"],
+        user=DATABASE_CONFIG["user"],
+        password=DATABASE_CONFIG["password"],
+        host=DATABASE_CONFIG["host"]
+    )
+    cursor = conn.cursor()
+    cursor.execute('''
+        SELECT description FROM Users WHERE id = %s
+    ''', (user_id,))
+    result = cursor.fetchone()
+    conn.close()
 
+    if result:
+        return result[0]  # Return user description
+    else:
+        return "No description for now."
+#update user description
 def update_description(user_id, description):
     conn = psycopg2.connect(
         dbname=DATABASE_CONFIG["database"],

@@ -185,13 +185,17 @@ class ProfilePage(QWidget):
         title = QLabel(f"Welcome to your profile page, {self.username}!", self)
         title.setFont(QFont('Arial', 20))
 
+        # Description label
+        self.description_label = QLabel(self)
+        self.update_description_label()
+
         # Buttons
         self.add_description_button = QPushButton('Add/Modify your description', self)
         self.add_cv_button = QPushButton('Add CV', self)
         self.search_jobs_button = QPushButton('Search for Jobs', self)
         self.sign_out_button = QPushButton('Sign Out', self)
 
-        #functions
+        # Functions
         self.sign_out_button.clicked.connect(self.sign_out)
         self.add_description_button.clicked.connect(self.add_modify_description)
         self.add_cv_button.clicked.connect(self.add_cv)
@@ -199,12 +203,20 @@ class ProfilePage(QWidget):
 
         # Add widgets to layout
         layout.addWidget(title)
-        layout.addWidget(self.sign_out_button)
+        layout.addWidget(self.description_label)
         layout.addWidget(self.add_description_button)
         layout.addWidget(self.add_cv_button)
         layout.addWidget(self.search_jobs_button)
+        layout.addWidget(self.sign_out_button)
 
         self.setLayout(layout)
+
+    def update_description_label(self):
+        description = userdb_management.get_description(self.user_id)
+        if description:
+            self.description_label.setText(f"Description: {description}")
+        else:
+            self.description_label.setText("Description: No description available.")
 
     def sign_out(self):
         self.home_page = HomePage() 
@@ -218,6 +230,7 @@ class ProfilePage(QWidget):
             success = userdb_management.update_description(self.user_id, text) 
             if success:
                 QMessageBox.information(self, "Success", "Description updated successfully!")
+                self.update_description_label()  # Update the description label
             else:
                 QMessageBox.warning(self, "Error", "Failed to update description.")
 
@@ -235,6 +248,7 @@ class ProfilePage(QWidget):
         self.jobs_search_page = JobsSearchPage(self.user_id)
         self.jobs_search_page.show()
         self.close()
+
 
 
 
