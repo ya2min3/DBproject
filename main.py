@@ -314,7 +314,6 @@ class JobsSearchPage(QWidget):
             msg_box.setWindowTitle("Job Description")
             msg_box.setText(job_details_str)
             msg_box.setIcon(QMessageBox.Information)
-
             # Add an "Apply" button to the message box
             apply_button = msg_box.addButton("Apply", QMessageBox.AcceptRole)
             msg_box.addButton(QMessageBox.Cancel)
@@ -327,8 +326,11 @@ class JobsSearchPage(QWidget):
                 self.apply_for_job(job_id)  # Call the apply function
 
     def apply_for_job(self, job_id):
-        QMessageBox.information(self, "Application Sent", f"You have applied for the job with ID: {job_id}")
-
+        success = jobsdb_management.update_total_applicants(job_id)
+        if success:
+            QMessageBox.information(self, "Application Sent", f"You have applied for the job with ID: {job_id}")
+        else:
+            QMessageBox.warning(self, "Application Failed", "Failed to apply for the job. Try again later.")
     def help(self):
         QMessageBox.information(self, "How to apply?", "To apply for a job, click on 'More'")
 

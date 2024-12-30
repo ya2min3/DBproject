@@ -73,7 +73,7 @@ def search_jobs(search_params):
             conn.close()
 
 def get_job_details(id):
-    print("ID: ", id)
+    #print("ID: ", id)  debugging
     try:
         conn = psycopg2.connect(
             dbname=DATABASE_CONFIG["database"],
@@ -97,3 +97,26 @@ def get_job_details(id):
     finally:
         if conn:
             conn.close()
+
+def update_total_applicants(job_id):
+    try:
+        conn = psycopg2.connect(
+            dbname=DATABASE_CONFIG["database"],
+            user=DATABASE_CONFIG["user"],
+            password=DATABASE_CONFIG["password"],
+            host=DATABASE_CONFIG["host"]
+        )
+        with conn:
+            with conn.cursor() as cursor:
+                cursor.execute('''
+                    UPDATE Jobs
+                    SET total_applicants = total_applicants + 1
+                    WHERE job_ID = %s
+                ''', (job_id,))
+    except psycopg2.Error as e:
+        print(f"An error occurred while updating the total applicants: {e}")
+        return False
+    finally:
+        if conn:
+            conn.close()
+            return True        
