@@ -20,5 +20,3 @@ with open('jobs.csv', 'r', encoding='utf-8') as csvfile:
         insert_line += ", ".join(escaped_items)
         insert_line += ");"
 
-        # Print or write the SQL statement
-        print(insert_line)
