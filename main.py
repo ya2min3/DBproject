@@ -237,6 +237,7 @@ class ProfilePage(QWidget):
         self.close()
 
 
+
 class JobsSearchPage(QWidget):
     def __init__(self, user_id):
         super().__init__()
@@ -277,30 +278,32 @@ class JobsSearchPage(QWidget):
 
         self.setLayout(layout)
 
-        # Connect double-click event to show job details:
+        # double-click to show job details:
         self.results_table.cellDoubleClicked.connect(self.show_job_details)
 
     def search(self):
-        keyword = self.keyword_input.text().strip()
+        keyword = self.keyword_input.text().strip() # search bar for user
         if not keyword:
             QMessageBox.warning(self, "Input Error", "Please enter a keyword.")
             return
         
-        # Call the search function and retrieve results
+        # Search for jobs in the database:
         results = jobsdb_management.search_jobs(keyword)
         
         # Clear previous results in the table
         self.results_table.setRowCount(0)
 
         if results:
-            # Populate the table with search results
+            # Fill table with search results
             self.results_table.setRowCount(len(results))
             for row_index, row_data in enumerate(results):
                 for column_index, data in enumerate(row_data):
                     self.results_table.setItem(row_index, column_index, QTableWidgetItem(str(data)))
         else:
             QMessageBox.information(self, "No Results", "No jobs found for the given keyword.")
-    
+
+
+
     def show_job_details(self, row, column):
         job_id_item = self.results_table.item(row, 0)  # Get the job ID item
         if job_id_item:

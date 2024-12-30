@@ -9,6 +9,8 @@ DATABASE_CONFIG = {
     "password": "Vomobdd23_"
 }
 
+# Function to search for jobs based on the search parameters
+#search_params: list of keywords
 def search_jobs(search_params):
     try:
         conn = psycopg2.connect(
@@ -18,44 +20,58 @@ def search_jobs(search_params):
             host=DATABASE_CONFIG["host"]
         )
         cursor = conn.cursor()
-        
-        # Prepare a list to store the matching job offers
-        matching_jobs = []
-        
-        # Create a query to check for keywords in the job descriptions
-        for keyword in search_params:
-            query = """
-            SELECT job_ID, designation, name, work_type, involvement, City, State FROM jobs
-            WHERE job_details ILIKE %s;
+        where_clauses = []
+        params = []
+
+        # Verify search_params is a list of keywords
+        if isinstance(search_params, str):
+            search_params = [search_params]
+
+        if search_params:
+            for keyword in search_params:
+                where_clauses.append("(designation ILIKE %s OR name ILIKE %s OR work_type ILIKE %s OR involvement ILIKE %s OR City ILIKE %s OR State ILIKE %s)")
+                params.extend([f"%{keyword}%", f"%{keyword}%", f"%{keyword}%", f"%{keyword}%", f"%{keyword}%", f"%{keyword}%"])
+
+            # Combine conditions with OR
+            where_clause = " OR ".join(where_clauses)
+            query = f"""
+            SELECT job_ID, designation, name, work_type, involvement, City, State 
+            FROM jobs
+            WHERE {where_clause};
             """
-            cursor.execute(query, (f"%{keyword}%",))
-            # Fetch all matching rows
-            rows = cursor.fetchall()
-            # Add the rows to the matching_jobs list
-            matching_jobs.extend(rows)
-        # Close the cursor and connection
-        cursor.close()
-        conn.close()
-        
+        else:
+            # If no search parameters are provided, return jobs with designation "Other"
+            query = """
+            SELECT job_ID, designation, name, work_type, involvement, City, State 
+            FROM jobs
+            WHERE designation = 'Other';
+            """
+            params = []  # No parameters needed for this query
+
+        # Debugging: Print query and parameters
+        #print("Executing Query:", query)
+        #print("With Parameters:", params)
+
+        # Execute query
+        cursor.execute(query, params)
+        matching_jobs = cursor.fetchall()
+
+        # Debugging: Print the results
+        #print("Matching Jobs:", matching_jobs)
+
         return matching_jobs
-    
+
     except psycopg2.Error as e:
         print(f"Database error: {e}")
         return []
+
     finally:
-        if conn:
+        # Ensure resources are closed
+        if 'cursor' in locals() and cursor:
             cursor.close()
+        if 'conn' in locals() and conn:
             conn.close()
 
-#displays the job informations
-import psycopg2
-
-DATABASE_CONFIG = {
-    "database": "db",
-    "user": "jass",
-    "host": "localhost",
-    "password": "Vomobdd23_"
-}
 
 def job_details(id):
     try:
