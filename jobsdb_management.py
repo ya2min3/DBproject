@@ -9,6 +9,44 @@ DATABASE_CONFIG = {
     "password": "Vomobdd23_"
 }
 
+def create_jobs_table():
+    try:
+        conn = psycopg2.connect(
+            dbname=DATABASE_CONFIG["database"],
+            user=DATABASE_CONFIG["user"],
+            password=DATABASE_CONFIG["password"],
+            host=DATABASE_CONFIG["host"]
+        )
+        with conn:
+            with conn.cursor() as cursor:
+                cursor.execute('''
+                    CREATE TABLE IF NOT EXISTS Jobs (
+                        job_ID numeric (10,0),
+                        designation text,
+                        company_id numeric(5,1),
+                        name text,
+                        work_type text,
+                        involvement text,
+                        employees_count numeric(5,0),
+                        total_applicants numeric(5,0),
+                        followers numeric,
+                        job_details text,
+                        details_id numeric(5,0),
+                        industry text,
+                        level text,
+                        City text,
+                        State text,
+                        PRIMARY KEY (job_ID),
+                        FOREIGN KEY (company_id) REFERENCES users(id)
+                    );
+                ''')
+        print("Table 'Jobs' created successfully or already exists.")
+    except psycopg2.Error as e:
+        print(f"An error occurred: {e}")
+    finally:
+        if conn:
+            conn.close()
+
 # Function to search for jobs based on the search parameters
 #search_params: list of keywords
 def search_jobs(search_params):

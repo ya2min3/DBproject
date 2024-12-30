@@ -49,192 +49,197 @@ def sign_up(name, email, password):
             password=DATABASE_CONFIG["password"],
             host=DATABASE_CONFIG["host"]
         )
-        cursor = conn.cursor()
-        cursor.execute('''
-            INSERT INTO Users (name, email, password) 
-            VALUES (%s, %s, %s)
-        ''', (name, email, hashed_password))  # Store the hashed password
-        conn.commit()
-        conn.close()
+        with conn:
+            with conn.cursor() as cursor:
+                cursor.execute('''
+                    INSERT INTO Users (name, email, password) 
+                    VALUES (%s, %s, %s)
+                ''', (name, email, hashed_password))  # Store the hashed password
         return True
     except psycopg2.IntegrityError:
         print("An account with this email already exists.")
         return False
+    except psycopg2.Error as e:
+        print(f"An error occurred: {e}")
+        return False
+    finally:
+        if conn:
+            conn.close()
 
 # Login function
 def login(email, password):
-    conn = psycopg2.connect(
-        dbname=DATABASE_CONFIG["database"],
-        user=DATABASE_CONFIG["user"],
-        password=DATABASE_CONFIG["password"],
-        host=DATABASE_CONFIG["host"]
-    )
-    cursor = conn.cursor()
-    cursor.execute('''
-        SELECT password FROM Users WHERE email = %s
-    ''', (email,))
-    result = cursor.fetchone()
-    conn.close()
-
-    if result:
-        stored_password = result[0]
-        # Check the password against the stored hashed password
-        if bcrypt.checkpw(password.encode('utf-8'), stored_password.encode('utf-8')):  # Make sure both are encoded
-            return True
+    try:
+        conn = psycopg2.connect(
+            dbname=DATABASE_CONFIG["database"],
+            user=DATABASE_CONFIG["user"],
+            password=DATABASE_CONFIG["password"],
+            host=DATABASE_CONFIG["host"]
+        )
+        with conn:
+            with conn.cursor() as cursor:
+                cursor.execute('''
+                    SELECT password FROM Users WHERE email = %s
+                ''', (email,))
+                result = cursor.fetchone()
+        if result:
+            stored_password = result[0]
+            # Check the password against the stored hashed password
+            if bcrypt.checkpw(password.encode('utf-8'), stored_password.encode('utf-8')):  # Make sure both are encoded
+                return True
+            else:
+                return False    
         else:
-            return False    
-    else:
+            return False
+    except psycopg2.Error as e:
+        print(f"An error occurred: {e}")
         return False
 
 # Get User ID
 def get_userid(email):
-    conn = psycopg2.connect(
-        dbname=DATABASE_CONFIG["database"],
-        user=DATABASE_CONFIG["user"],
-        password=DATABASE_CONFIG["password"],
-        host=DATABASE_CONFIG["host"]
-    )
-    cursor = conn.cursor()
-    cursor.execute('''
-        SELECT id FROM Users WHERE email = %s
-    ''', (email,))
-    result = cursor.fetchone()
-    conn.close()
-
-    if result:
-        return result[0]  # Return user ID
-    else:
+    try:
+        conn = psycopg2.connect(
+            dbname=DATABASE_CONFIG["database"],
+            user=DATABASE_CONFIG["user"],
+            password=DATABASE_CONFIG["password"],
+            host=DATABASE_CONFIG["host"]
+        )
+        with conn:
+            with conn.cursor() as cursor:
+                cursor.execute('''
+                    SELECT id FROM Users WHERE email = %s
+                ''', (email,))
+                result = cursor.fetchone()
+        if result:
+            return result[0]  # Return user ID
+        else:
+            return None
+    except psycopg2.Error as e:
+        print(f"An error occurred: {e}")
         return None
 
 # Get User Name
 def get_username(id):
-    conn = psycopg2.connect(
-        dbname=DATABASE_CONFIG["database"],
-        user=DATABASE_CONFIG["user"],
-        password=DATABASE_CONFIG["password"],
-        host=DATABASE_CONFIG["host"]
-    )
-    cursor = conn.cursor()
-    cursor.execute('''
-        SELECT name FROM Users WHERE id = %s
-    ''', (id,))
-    result = cursor.fetchone()
-    conn.close()
-
-    if result:
-        return result[0]  # Return user name
-    else:
+    try:
+        conn = psycopg2.connect(
+            dbname=DATABASE_CONFIG["database"],
+            user=DATABASE_CONFIG["user"],
+            password=DATABASE_CONFIG["password"],
+            host=DATABASE_CONFIG["host"]
+        )
+        with conn:
+            with conn.cursor() as cursor:
+                cursor.execute('''
+                    SELECT name FROM Users WHERE id = %s
+                ''', (id,))
+                result = cursor.fetchone()
+        if result:
+            return result[0]  # Return user name
+        else:
+            return None
+    except psycopg2.Error as e:
+        print(f"An error occurred: {e}")
         return None
 
 # Get User Description
 def get_description(user_id):
-    conn = psycopg2.connect(
-        dbname=DATABASE_CONFIG["database"],
-        user=DATABASE_CONFIG["user"],
-        password=DATABASE_CONFIG["password"],
-        host=DATABASE_CONFIG["host"]
-    )
-    cursor = conn.cursor()
-    cursor.execute('''
-        SELECT description FROM Users WHERE id = %s
-    ''', (user_id,))
-    result = cursor.fetchone()
-    conn.close()
-
-    if result:
-        return result[0]  # Return user description
-    else:
+    try:
+        conn = psycopg2.connect(
+            dbname=DATABASE_CONFIG["database"],
+            user=DATABASE_CONFIG["user"],
+            password=DATABASE_CONFIG["password"],
+            host=DATABASE_CONFIG["host"]
+        )
+        with conn:
+            with conn.cursor() as cursor:
+                cursor.execute('''
+                    SELECT description FROM Users WHERE id = %s
+                ''', (user_id,))
+                result = cursor.fetchone()
+        if result:
+            return result[0]  
+        else:
+            return "No description for now."
+    except psycopg2.Error as e:
+        print(f"An error occurred: {e}")
         return "No description for now."
-#update user description
+    
+# Update user description
 def update_description(user_id, description):
-    conn = psycopg2.connect(
-        dbname=DATABASE_CONFIG["database"],
-        user=DATABASE_CONFIG["user"],
-        password=DATABASE_CONFIG["password"],
-        host=DATABASE_CONFIG["host"]
-    )
-    cursor = conn.cursor()
-    cursor.execute('''
-        UPDATE Users SET description = %s WHERE id = %s
-    ''', (description, user_id))
-    conn.commit()
-    conn.close()
-    return True
+    try:
+        conn = psycopg2.connect(
+            dbname=DATABASE_CONFIG["database"],
+            user=DATABASE_CONFIG["user"],
+            password=DATABASE_CONFIG["password"],
+            host=DATABASE_CONFIG["host"]
+        )
+        with conn:
+            with conn.cursor() as cursor:
+                cursor.execute('''
+                    UPDATE Users SET description = %s WHERE id = %s
+                ''', (description, user_id))
+                conn.commit()
+        return True
+    except psycopg2.Error as e:
+        print(f"An error occurred: {e}")
+        return False
 
-#update user cv
+# Update user CV
 def update_cv(user_id, cv_path):
-    conn = psycopg2.connect(
-        dbname=DATABASE_CONFIG["database"],
-        user=DATABASE_CONFIG["user"],
-        password=DATABASE_CONFIG["password"],
-        host=DATABASE_CONFIG["host"]
-    )
-    cursor = conn.cursor()
-    cursor.execute('''
-        UPDATE Users SET cv_path = %s WHERE id = %s
-    ''', (cv_path, user_id))
-    conn.commit()
-    conn.close()
-    return True
-
-
-#A modifier:--------------------------------------------------------------------------------------------------
-# Create a Post
-def create_post(user_id):
-    content = input("Enter your post content: ")
-    conn = conn = psycopg2.connect(
+    try:
+        conn = psycopg2.connect(
             dbname=DATABASE_CONFIG["database"],
             user=DATABASE_CONFIG["user"],
             password=DATABASE_CONFIG["password"],
             host=DATABASE_CONFIG["host"]
         )
-    cursor = conn.cursor()
-    cursor.execute('INSERT INTO posts (user_id, content) VALUES (?, ?)', (user_id, content))
-    conn.commit()
-    conn.close()
-    return content
+        with conn:
+            with conn.cursor() as cursor:
+                cursor.execute('''
+                    UPDATE Users SET cv_path = %s WHERE id = %s
+                ''', (cv_path, user_id))
+                conn.commit()
+        return True
+    except psycopg2.Error as e:
+        print(f"An error occurred: {e}")
+        return False
 
-# Search for Users
-def search_users():
-    keyword = input("Enter a name or email to search: ")
-
-    conn = psycopg2.connect(
+def get_cv(user_id):
+    try:
+        conn = psycopg2.connect(
             dbname=DATABASE_CONFIG["database"],
             user=DATABASE_CONFIG["user"],
             password=DATABASE_CONFIG["password"],
             host=DATABASE_CONFIG["host"]
         )
-    cursor = conn.cursor()
-    cursor.execute('''
-        SELECT id, name, email FROM Users 
-        WHERE name LIKE ? OR email LIKE ?
-    ''', (f"%{keyword}%", f"%{keyword}%"))
-    results = cursor.fetchall()
-    conn.close()
+        with conn:
+            with conn.cursor() as cursor:
+                cursor.execute('''
+                    SELECT cv_path FROM Users WHERE id = %s
+                ''', (user_id,))
+                result = cursor.fetchone()
+        if result:
+            return result[0]  
+        else:
+            return "No cv for now."
+    except psycopg2.Error as e:
+        print(f"An error occurred: {e}")
+        return "No cv for now."
 
-    if results:
-        print("Search results:")
-        for user in results:
-            print(f"ID: {user[0]}, Name: {user[1]}, Email: {user[2]}")
-    else:
-        print("No users found.")
-
-# View User Posts
-def view_posts(user_id):
-    conn = psycopg2.connect(
+def remove_cv(user_id):
+    try:
+        conn = psycopg2.connect(
             dbname=DATABASE_CONFIG["database"],
             user=DATABASE_CONFIG["user"],
             password=DATABASE_CONFIG["password"],
             host=DATABASE_CONFIG["host"]
         )
-    cursor = conn.cursor()
-    cursor.execute('SELECT content, timestamp FROM posts WHERE user_id = ? ORDER BY timestamp DESC', (user_id,))
-    posts = cursor.fetchall()
-    conn.close()
-
-    if posts:
-        print("Your posts:")
-        for post in posts:
-            print(f"- {post[1]}: {post[0]}")
-    else:
-        print("No posts found.")
+        with conn:
+            with conn.cursor() as cursor:
+                cursor.execute('''
+                    UPDATE Users SET cv_path = NULL WHERE id = %s
+                ''', (user_id,))
+                conn.commit()
+        return True
+    except psycopg2.Error as e:
+        print(f"An error occurred: {e}")
+        return False

@@ -3,10 +3,16 @@ from PyQt5.QtWidgets import *
 from PyQt5.QtGui import QFont
 import userdb_management 
 import jobsdb_management
+import parse_jobs_csv
 
 # Create the user table
 userdb_management.create_users_table()
+# Create the jobs table
+jobsdb_management.create_jobs_table()
+# Fill the jobs table with data from the CSV file
+parse_jobs_csv.parse_jobs()
 
+#Application Home Page
 class HomePage(QWidget):
     def __init__(self):
         super().__init__()
@@ -50,7 +56,7 @@ class HomePage(QWidget):
             "You can also search for other users and view their CVs!"
         )
 
-
+# Application Sign-Up Page
 class SignupPage(QWidget):
     def __init__(self):
         super().__init__()
@@ -118,7 +124,7 @@ class SignupPage(QWidget):
         self.profile_page.show()
         self.close()
 
-
+#Application Login Page
 class LoginPage(QWidget):
     def __init__(self):
         super().__init__()
@@ -161,7 +167,6 @@ class LoginPage(QWidget):
         else:
             QMessageBox.warning(self, "Login Failed", "Invalid email or password.")
         
-
     def go_home(self):
         self.home_page = HomePage()
         self.home_page.show()
@@ -172,7 +177,7 @@ class LoginPage(QWidget):
         self.profile_page.show()
         self.close()
 
-
+#Application Profile Page
 class ProfilePage(QWidget):
     def __init__(self, user_id):
         super().__init__()
@@ -188,6 +193,10 @@ class ProfilePage(QWidget):
         # Description label
         self.description_label = QLabel(self)
         self.update_description_label()
+
+        # CV label
+        self.cv_label = QLabel(self)
+        self.update_cv_label()
 
         # Buttons
         self.add_description_button = QPushButton('Add/Modify your description', self)
@@ -205,6 +214,7 @@ class ProfilePage(QWidget):
         layout.addWidget(title)
         layout.addWidget(self.description_label)
         layout.addWidget(self.add_description_button)
+        layout.addWidget(self.cv_label)  # Add cv_label to the layout
         layout.addWidget(self.add_cv_button)
         layout.addWidget(self.search_jobs_button)
         layout.addWidget(self.sign_out_button)
@@ -218,6 +228,13 @@ class ProfilePage(QWidget):
         else:
             self.description_label.setText("Description: No description available.")
 
+    def update_cv_label(self):
+        cv = userdb_management.get_cv(self.user_id)
+        if cv:
+            self.cv_label.setText(f"CV: {cv}")
+        else:
+            self.cv_label.setText("CV: No CV available.")
+            
     def sign_out(self):
         self.home_page = HomePage() 
         self.home_page.show()
@@ -241,6 +258,7 @@ class ProfilePage(QWidget):
             success = userdb_management.update_cv(self.user_id, file_path) 
             if success:
                 QMessageBox.information(self, "Success", "CV uploaded successfully!")
+                self.update_cv_label()  # Update the CV label to show the new CV
             else:
                 QMessageBox.warning(self, "Error", "Failed to upload CV.")
 
@@ -249,9 +267,7 @@ class ProfilePage(QWidget):
         self.jobs_search_page.show()
         self.close()
 
-
-
-
+#Application Jobs Search Page
 class JobsSearchPage(QWidget):
     def __init__(self, user_id):
         super().__init__()
@@ -359,6 +375,7 @@ class JobsSearchPage(QWidget):
         self.close()
 
 
+# Run the application
 if __name__ == "__main__":
     app = QApplication(sys.argv)
     main_window = HomePage()
