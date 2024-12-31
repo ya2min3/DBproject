@@ -3,8 +3,6 @@ from PyQt5.QtWidgets import *
 from PyQt5.QtGui import QFont
 import userdb_management 
 import jobsdb_management
-import parse_jobs_csv
-import subprocess
 
 
 # Create the user table

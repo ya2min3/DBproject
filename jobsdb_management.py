@@ -49,15 +49,15 @@ def search_jobs(search_params):
             params = []  # No parameters needed for this query
 
         # Debugging: Print query and parameters
-        #print("Executing Query:", query)
-        #print("With Parameters:", params)
+        print("Executing Query:", query)
+        print("With Parameters:", params)
 
         # Execute query
         cursor.execute(query, params)
         matching_jobs = cursor.fetchall()
 
-        # Debugging: Print the results
-        #print("Matching Jobs:", matching_jobs)
+        #Debugging: Print the results
+        print("Matching Jobs:", matching_jobs)
 
         return matching_jobs
 
