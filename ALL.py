@@ -307,7 +307,8 @@ class ProfilePage(QWidget):
         layout = QVBoxLayout()
 
         title = QLabel(f"Welcome to your profile page, {self.username}!", self)
-        title.setFont(QFont('Arial', 20))
+        title.setFont(QFont('Arial', 50))
+        title.setAlignment(Qt.AlignCenter)  # Align the text to the center
 
         # Description label
         self.description_label = QLabel(self)
@@ -385,6 +386,17 @@ class ProfilePage(QWidget):
         self.jobs_search_page = JobsSearchPage(self.user_id)
         self.jobs_search_page.show()
         self.close()
+    
+    # Ajouter ce bouton dans __init__ de ProfilePage
+        self.view_applied_jobs_button = QPushButton('Afficher les jobs postulés', self)
+        self.view_applied_jobs_button.clicked.connect(self.view_applied_jobs)
+        layout.addWidget(self.view_applied_jobs_button)
+
+    # Ajouter la fonction suivante dans ProfilePage
+    def view_applied_jobs(self):
+        self.applied_jobs_page = AppliedJobsPage(self.user_id)
+        self.applied_jobs_page.show()
+
 
 #Application Jobs Search Page
 class JobsSearchPage(QWidget):
@@ -493,6 +505,48 @@ class JobsSearchPage(QWidget):
         self.profile_page.show()
         self.close()
 
+class AppliedJobsPage(QWidget):
+    def __init__(self, user_id):
+        super().__init__()
+        self.user_id = user_id
+        self.setWindowTitle("Jobs Postulés")
+        self.setGeometry(100, 100, 800, 400)
+
+        layout = QVBoxLayout()
+        title = QLabel("Liste des jobs postulés", self)
+        title.setFont(QFont('Arial', 20))
+        title.setAlignment(Qt.AlignCenter)
+        layout.addWidget(title)
+
+        # Table pour afficher les jobs
+        self.jobs_table = QTableWidget(self)
+        self.jobs_table.setColumnCount(6)
+        self.jobs_table.setHorizontalHeaderLabels(["Job ID", "Titre", "Entreprise", "Type", "Ville", "État"])
+        layout.addWidget(self.jobs_table)
+
+        # Charger les données
+        self.load_jobs()
+
+        # Bouton retour
+        back_button = QPushButton("Retour au profil", self)
+        back_button.clicked.connect(self.go_back)
+        layout.addWidget(back_button)
+
+        self.setLayout(layout)
+
+    def load_jobs(self):
+        jobs = jobsdb_management.get_applied_jobs(self.user_id)
+        if jobs:
+            self.jobs_table.setRowCount(len(jobs))
+            for row_index, row_data in enumerate(jobs):
+                for column_index, data in enumerate(row_data):
+                    self.jobs_table.setItem(row_index, column_index, QTableWidgetItem(str(data)))
+        else:
+            QMessageBox.information(self, "Info", "Aucun job postulé trouvé.")
+
+    def go_back(self):
+        self.close()
+
 
 # Run the application
 if __name__ == "__main__":
@@ -501,3 +555,492 @@ if __name__ == "__main__":
     main_window = HomePage()
     main_window.show()
     sys.exit(app.exec_())
+
+userdb_managemeent.py 
+import psycopg2
+import bcrypt
+
+# Connection credentials
+DATABASE_CONFIG = {
+    "database": "mabdd",
+    "user": "samelis",
+    "host": "localhost",
+    "password": "Melissa20%03"
+}
+
+# Create users table
+def create_users_table():
+    try:
+        conn = psycopg2.connect(
+            dbname=DATABASE_CONFIG["database"],
+            user=DATABASE_CONFIG["user"],
+            password=DATABASE_CONFIG["password"],
+            host=DATABASE_CONFIG["host"]
+        )
+        with conn:
+            with conn.cursor() as cursor:
+                cursor.execute('''
+                    CREATE TABLE IF NOT EXISTS Users (
+                        id SERIAL PRIMARY KEY,
+                        name VARCHAR(255) NOT NULL,
+                        email VARCHAR(320) UNIQUE NOT NULL,
+                        password VARCHAR(255) NOT NULL,
+                        description TEXT,
+                        photo_path TEXT,
+                        cv_path TEXT
+                    );
+                ''')
+        print("Table 'Users' created successfully or already exists.")
+    except psycopg2.Error as e:
+        print(f"An error occurred: {e}")
+    finally:
+        if conn:
+            conn.close()
+
+# Sign-Up function: Stores the new user's info in the database
+def sign_up(name, email, password):
+    # Hash the password
+    hashed_password = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')  # Encode and hash the password
+    try:
+        conn = psycopg2.connect(
+            dbname=DATABASE_CONFIG["database"],
+            user=DATABASE_CONFIG["user"],
+            password=DATABASE_CONFIG["password"],
+            host=DATABASE_CONFIG["host"]
+        )
+        with conn:
+            with conn.cursor() as cursor:
+                cursor.execute('''
+                    INSERT INTO Users (name, email, password) 
+                    VALUES (%s, %s, %s)
+                ''', (name, email, hashed_password))  # Store the hashed password
+        return True
+    except psycopg2.IntegrityError:
+        print("An account with this email already exists.")
+        return False
+    except psycopg2.Error as e:
+        print(f"An error occurred: {e}")
+        return False
+    finally:
+        if conn:
+            conn.close()
+
+# Login function
+def login(email, password):
+    try:
+        conn = psycopg2.connect(
+            dbname=DATABASE_CONFIG["database"],
+            user=DATABASE_CONFIG["user"],
+            password=DATABASE_CONFIG["password"],
+            host=DATABASE_CONFIG["host"]
+        )
+        with conn:
+            with conn.cursor() as cursor:
+                cursor.execute('''
+                    SELECT password FROM Users WHERE email = %s
+                ''', (email,))
+                result = cursor.fetchone()
+        if result:
+            stored_password = result[0]
+            # Check the password against the stored hashed password
+            if bcrypt.checkpw(password.encode('utf-8'), stored_password.encode('utf-8')):  # Make sure both are encoded
+                return True
+            else:
+                return False    
+        else:
+            return False
+    except psycopg2.Error as e:
+        print(f"An error occurred: {e}")
+        return False
+
+# Get User ID
+def get_userid(email):
+    try:
+        conn = psycopg2.connect(
+            dbname=DATABASE_CONFIG["database"],
+            user=DATABASE_CONFIG["user"],
+            password=DATABASE_CONFIG["password"],
+            host=DATABASE_CONFIG["host"]
+        )
+        with conn:
+            with conn.cursor() as cursor:
+                cursor.execute('''
+                    SELECT id FROM Users WHERE email = %s
+                ''', (email,))
+                result = cursor.fetchone()
+        if result:
+            return result[0]  # Return user ID
+        else:
+            return None
+    except psycopg2.Error as e:
+        print(f"An error occurred: {e}")
+        return None
+
+# Get User Name
+def get_username(id):
+    try:
+        conn = psycopg2.connect(
+            dbname=DATABASE_CONFIG["database"],
+            user=DATABASE_CONFIG["user"],
+            password=DATABASE_CONFIG["password"],
+            host=DATABASE_CONFIG["host"]
+        )
+        with conn:
+            with conn.cursor() as cursor:
+                cursor.execute('''
+                    SELECT name FROM Users WHERE id = %s
+                ''', (id,))
+                result = cursor.fetchone()
+        if result:
+            return result[0]  # Return user name
+        else:
+            return None
+    except psycopg2.Error as e:
+        print(f"An error occurred: {e}")
+        return None
+
+# Get User Description
+def get_description(user_id):
+    try:
+        conn = psycopg2.connect(
+            dbname=DATABASE_CONFIG["database"],
+            user=DATABASE_CONFIG["user"],
+            password=DATABASE_CONFIG["password"],
+            host=DATABASE_CONFIG["host"]
+        )
+        with conn:
+            with conn.cursor() as cursor:
+                cursor.execute('''
+                    SELECT description FROM Users WHERE id = %s
+                ''', (user_id,))
+                result = cursor.fetchone()
+        if result:
+            return result[0]  
+        else:
+            return "No description for now."
+    except psycopg2.Error as e:
+        print(f"An error occurred: {e}")
+        return "No description for now."
+    
+# Update user description
+def update_description(user_id, description):
+    try:
+        conn = psycopg2.connect(
+            dbname=DATABASE_CONFIG["database"],
+            user=DATABASE_CONFIG["user"],
+            password=DATABASE_CONFIG["password"],
+            host=DATABASE_CONFIG["host"]
+        )
+        with conn:
+            with conn.cursor() as cursor:
+                cursor.execute('''
+                    UPDATE Users SET description = %s WHERE id = %s
+                ''', (description, user_id))
+                conn.commit()
+        return True
+    except psycopg2.Error as e:
+        print(f"An error occurred: {e}")
+        return False
+
+# Update user CV
+def update_cv(user_id, cv_path):
+    try:
+        conn = psycopg2.connect(
+            dbname=DATABASE_CONFIG["database"],
+            user=DATABASE_CONFIG["user"],
+            password=DATABASE_CONFIG["password"],
+            host=DATABASE_CONFIG["host"]
+        )
+        with conn:
+            with conn.cursor() as cursor:
+                cursor.execute('''
+                    UPDATE Users SET cv_path = %s WHERE id = %s
+                ''', (cv_path, user_id))
+                conn.commit()
+        return True
+    except psycopg2.Error as e:
+        print(f"An error occurred: {e}")
+        return False
+
+def get_cv(user_id):
+    try:
+        conn = psycopg2.connect(
+            dbname=DATABASE_CONFIG["database"],
+            user=DATABASE_CONFIG["user"],
+            password=DATABASE_CONFIG["password"],
+            host=DATABASE_CONFIG["host"]
+        )
+        with conn:
+            with conn.cursor() as cursor:
+                cursor.execute('''
+                    SELECT cv_path FROM Users WHERE id = %s
+                ''', (user_id,))
+                result = cursor.fetchone()
+        if result:
+            return result[0]  
+        else:
+            return "No cv for now."
+    except psycopg2.Error as e:
+        print(f"An error occurred: {e}")
+        return "No cv for now."
+
+def remove_cv(user_id):
+    try:
+        conn = psycopg2.connect(
+            dbname=DATABASE_CONFIG["database"],
+            user=DATABASE_CONFIG["user"],
+            password=DATABASE_CONFIG["password"],
+            host=DATABASE_CONFIG["host"]
+        )
+        with conn:
+            with conn.cursor() as cursor:
+                cursor.execute('''
+                    UPDATE Users SET cv_path = NULL WHERE id = %s
+                ''', (user_id,))
+                conn.commit()
+        return True
+    except psycopg2.Error as e:
+        print(f"An error occurred: {e}")
+        return False
+
+
+    jobsdb_management .py 
+    #For when user uses the search bar to look for jobs
+import psycopg2
+
+# Connection credentials
+DATABASE_CONFIG = {
+    "database": "mabdd",
+    "user": "samelis",
+    "host": "localhost",
+    "password": "Melissa20%03"
+}
+
+def create_jobs_table():
+    try:
+        conn = psycopg2.connect(
+            dbname=DATABASE_CONFIG["database"],
+            user=DATABASE_CONFIG["user"],
+            password=DATABASE_CONFIG["password"],
+            host=DATABASE_CONFIG["host"]
+        )
+        with conn:
+            with conn.cursor() as cursor:
+                cursor.execute('''
+                    CREATE TABLE IF NOT EXISTS Jobs (
+                        job_ID numeric (10,0),
+                        designation text,
+                        company_id numeric(5,1),
+                        name text,
+                        work_type text,
+                        involvement text,
+                        employees_count numeric(5,0),
+                        total_applicants numeric(5,0),
+                        followers numeric,
+                        job_details text,
+                        details_id numeric(5,0),
+                        industry text,
+                        level text,
+                        City text,
+                        State text,
+                        PRIMARY KEY (job_ID)
+                    );
+                ''')
+        print("Table 'Jobs' created successfully or already exists.")
+    except psycopg2.Error as e:
+        print(f"An error occurred: {e}")
+    finally:
+        if conn:
+            conn.close()
+
+# function to verify if the jobs table is empty
+def is_jobs_table_empty():
+    try:
+        conn = psycopg2.connect(
+            dbname=DATABASE_CONFIG["database"],
+            user=DATABASE_CONFIG["user"],
+            password=DATABASE_CONFIG["password"],
+            host=DATABASE_CONFIG["host"]
+        )
+        cursor = conn.cursor()
+        cursor.execute("SELECT COUNT(*) FROM Jobs;") 
+        count = cursor.fetchone()[0] 
+        return count == 0 
+    
+    except Exception as e:
+        print(f"Error checking if jobs table is empty: {e}")
+        return True  
+
+    finally:
+        if cursor:
+            cursor.close()
+        if conn:
+            conn.close()
+
+
+def fill_jobs_table():
+    try:
+        conn = psycopg2.connect(
+            dbname=DATABASE_CONFIG["database"],
+            user=DATABASE_CONFIG["user"],
+            password=DATABASE_CONFIG["password"],
+            host=DATABASE_CONFIG["host"]
+        )
+        with conn:
+            with conn.cursor() as cursor:
+                # Read the SQL file
+                with open('jobs_data.sql', 'r') as file:
+                    sql_commands = file.read()
+                
+                # Execute the SQL commands
+                cursor.execute(sql_commands)
+                print("Jobs table filled successfully.")
+    except psycopg2.Error as e:
+        print(f"An error occurred: {e}")
+    finally:
+        if conn:
+            conn.close()
+
+# Function to search for jobs based on the search parameters
+#search_params: list of keywords
+def search_jobs(search_params):
+    try:
+        conn = psycopg2.connect(
+            dbname=DATABASE_CONFIG["database"],
+            user=DATABASE_CONFIG["user"],
+            password=DATABASE_CONFIG["password"],
+            host=DATABASE_CONFIG["host"]
+        )
+        cursor = conn.cursor()
+        where_clauses = []
+        params = []
+
+        # Verify search_params is a list of keywords
+        if isinstance(search_params, str):
+            search_params = [search_params]
+
+        if search_params:
+            for keyword in search_params:
+                where_clauses.append("(designation ILIKE %s OR name ILIKE %s OR work_type ILIKE %s OR involvement ILIKE %s OR City ILIKE %s OR State ILIKE %s)")
+                params.extend([f"%{keyword}%", f"%{keyword}%", f"%{keyword}%", f"%{keyword}%", f"%{keyword}%", f"%{keyword}%"])
+
+            # Combine conditions with OR
+            where_clause = " OR ".join(where_clauses)
+            query = f"""
+            SELECT job_ID, designation, name, work_type, involvement, City, State 
+            FROM Jobs
+            WHERE {where_clause};
+            """
+        else:
+            # If no search parameters are provided, return jobs with designation "Other"
+            query = """
+            SELECT job_ID, designation, name, work_type, involvement, City, State 
+            FROM Jobs
+            WHERE designation = 'Other';
+            """
+            params = []  # No parameters needed for this query
+
+        # Debugging: Print query and parameters
+        #print("Executing Query:", query)
+        #print("With Parameters:", params)
+
+        # Execute query
+        cursor.execute(query, params)
+        matching_jobs = cursor.fetchall()
+
+        # Debugging: Print the results
+        #print("Matching Jobs:", matching_jobs)
+
+        return matching_jobs
+
+    except psycopg2.Error as e:
+        print(f"Database error: {e}")
+        return []
+
+    finally:
+        # Ensure resources are closed
+        if 'cursor' in locals() and cursor:
+            cursor.close()
+        if 'conn' in locals() and conn:
+            conn.close()
+
+def get_job_details(id):
+    #print("ID: ", id)  debugging
+    try:
+        conn = psycopg2.connect(
+            dbname=DATABASE_CONFIG["database"],
+            user=DATABASE_CONFIG["user"],
+            password=DATABASE_CONFIG["password"],
+            host=DATABASE_CONFIG["host"]
+        )
+        with conn:
+            with conn.cursor() as cursor:
+                cursor.execute('''
+                    SELECT job_details
+                    FROM Jobs
+     
+                    WHERE job_ID = %s
+                ''', (id,))  # Use the equality operator and pass the id as a tuple
+                
+                results = cursor.fetchall()
+                return results 
+    except psycopg2.Error as e:
+        print(f"An error occurred while searching for job details: {e}")
+        return []
+    finally:
+        if conn:
+            conn.close()
+
+def update_total_applicants(job_id):
+    try:
+        conn = psycopg2.connect(
+            dbname=DATABASE_CONFIG["database"],
+            user=DATABASE_CONFIG["user"],
+            password=DATABASE_CONFIG["password"],
+            host=DATABASE_CONFIG["host"]
+        )
+        with conn:
+            with conn.cursor() as cursor:
+                cursor.execute('''
+                    UPDATE Jobs
+                    SET total_applicants = total_applicants + 1
+                    WHERE job_ID = %s
+                ''', (job_id,))
+    except psycopg2.Error as e:
+        print(f"An error occurred while updating the total applicants: {e}")
+        return False
+    finally:
+        if conn:
+            conn.close()
+            return True        
+
+def get_applied_jobs(user_id):
+    try:
+        conn = psycopg2.connect(
+            dbname=DATABASE_CONFIG["database"],
+            user=DATABASE_CONFIG["user"],
+            password=DATABASE_CONFIG["password"],
+            host=DATABASE_CONFIG["host"]
+        )
+        with conn:
+            with conn.cursor() as cursor:
+                cursor.execute('''
+                    SELECT j.job_ID, j.designation, j.name, j.work_type, j.City, j.State
+                    FROM apply a
+                    INNER JOIN Jobs j ON a.job_id = j.job_ID
+                    WHERE a.user_id = %s
+                ''', (user_id,))
+                return cursor.fetchall()
+    except psycopg2.Error as e:
+        print(f"An error occurred: {e}")
+        return []
+    finally:
+        if conn:
+            conn.close()
+create table apply (
+    application_id SERIAL PRIMARY KEY,   -- Identifiant unique de la postulation
+    user_id INT NOT NULL,                -- L'ID de l'utilisateur qui a postulé
+    job_id INT NOT NULL, 
+    FOREIGN KEY (user_id) REFERENCES user(id) ON DELETE CASCADE,  -- Clé étrangère vers la table `users`
+    FOREIGN KEY (job_id) REFERENCES jobs(job_ID) ON DELETE CASCADE     -- Clé étrangère vers la table `jobs`
+)

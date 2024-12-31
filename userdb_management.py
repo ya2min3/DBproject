@@ -3,10 +3,10 @@ import bcrypt
 
 # Connection credentials
 DATABASE_CONFIG = {
-    "database": "db",
-    "user": "jass",
+    "database": "mabdd",
+    "user": "samelis",
     "host": "localhost",
-    "password": "Vomobdd23_"
+    "password": "Melissa20%03"
 }
 
 # Create users table
