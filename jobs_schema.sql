@@ -1,4 +1,4 @@
-create table jobs (
+create table Jobs (
     job_ID numeric (10,0),
     designation text,
     company_id numeric(5,1),
