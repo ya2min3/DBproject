@@ -7,6 +7,7 @@ import parse_jobs_csv
 import subprocess
 
 
+
 # Create the user table
 userdb_management.create_users_table()
 # Create the jobs table
