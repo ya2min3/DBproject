@@ -3,11 +3,12 @@ import psycopg2
 
 # Connection credentials
 DATABASE_CONFIG = {
-    "database": "db",
-    "user": "jass",
-    "host": "localhost",
-    "password": "Vomobdd23_"
+    "database": "l3info_78",
+    "user": "l3info_78",
+    "host": "10.11.11.22",
+    "password": "L3INFO_78"
 }
+
 
 # Function to search for jobs based on the search parameters
 #search_params: list of keywords
