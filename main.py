@@ -1,31 +1,84 @@
 import sys
 from PyQt5.QtWidgets import *
-from PyQt5.QtGui import QFont
+from PyQt5.QtGui import QFont, QFontDatabase, QColor
+from PyQt5.QtCore import Qt
+from PyQt5.QtWidgets import QApplication
 import userdb_management 
 import jobsdb_management
-import parse_jobs_csv
-import subprocess
+from PyQt5.QtGui import QPixmap
+from PyQt5.QtWidgets import QLabel
+import tkinter as tk  # Importer Tkinter
+
+def add_logo_to_window(self, logo_path, logo_size=(100, 100)):
+    # Create a QLabel to display the logo
+    logo_label = QLabel(self)
+    logo_pixmap = QPixmap(logo_path)  # Use the correct logo path
+    logo_label.setPixmap(logo_pixmap.scaled(logo_size[0], logo_size[1]))  # Scale the image to the desired size
+    logo_label.setAlignment(Qt.AlignCenter)  # Center the logo in the QLabel
+
+    # Add the logo label to the layout
+    main_layout = self.layout()  # Get the layout of the window
+    if main_layout:
+        main_layout.insertWidget(0, logo_label)  # Add the logo at the top of the layout
+
+# Couleurs du style
+PRIMARY_COLOR = "#6A1B9A"  # Violet
+SECONDARY_COLOR = "#E1BEE7"  # Violet clair
+BACKGROUND_COLOR = "#F3E5F5"  # Fond violet très clair
+TEXT_COLOR = "#212121"  # Gris foncé pour un bon contraste sur fond clair
+HIGHLIGHT_COLOR = "#8E24AA"  # Violet plus clair
+ERROR_COLOR = "#D32F2F"  # Rouge (pour l'erreur)
+
+# Police globale
+DEFAULT_FONT = "Arial"
+FONT_SIZE = 12
+
+# Application du style
+def apply_style(app):
+    # Appliquer la police globale
+    app.setFont(QFont(DEFAULT_FONT, FONT_SIZE))
+    
+    # Définir les feuilles de style globales
+    app.setStyleSheet(f"""
+        QWidget {{
+            background-color: {BACKGROUND_COLOR};
+            color: {TEXT_COLOR};
+            font-family: {DEFAULT_FONT};
+            font-size: {FONT_SIZE}px;
+        }}
+        QPushButton {{
+            background-color: {PRIMARY_COLOR};
+            color: {SECONDARY_COLOR};
+            border: none;
+            padding: 8px 15px;
+            border-radius: 5px;
+        }}
+        QPushButton:hover {{
+            background-color: {HIGHLIGHT_COLOR};
+            color: {TEXT_COLOR};
+        }}
+        QPushButton:pressed {{
+            background-color: {ERROR_COLOR};
+            color: {SECONDARY_COLOR};
+        }}
+        QLabel {{
+            color: {TEXT_COLOR};
+        }}
+        QLineEdit {{
+            background-color: {SECONDARY_COLOR};
+            color: {TEXT_COLOR};
+            border: 1px solid {PRIMARY_COLOR};
+            padding: 5px;
+            border-radius: 3px;
+        }}
+        QLineEdit:focus {{
+            border: 1px solid {HIGHLIGHT_COLOR};
+        }}
+    """)
 
 
 # Create the user table
 userdb_management.create_users_table()
-# Create the jobs table
-jobsdb_management.create_jobs_table()
-# Check if the jobs table is empty
-if jobsdb_management.is_jobs_table_empty():  # Function to check if the table is empty
-    # Create file jobs_data.sql
-    with open('jobs_data.sql', 'w') as output_file:
-    # Execute the command and redirect the output to the file
-        result = subprocess.run(['python3', 'parse_jobs_csv.py'], stdout=output_file, stderr=subprocess.PIPE)
-    # Check for errors
-    if result.returncode == 0:
-        print("Command executed successfully, output written to jobs_data.sql")
-        # Execute file to fill table:
-        jobsdb_management.fill_jobs_table()
-    else:
-        print("Command failed with return code:", result.returncode)
-        print("Error:", result.stderr.decode())
-    
 
 #Application Home Page
 class HomePage(QWidget):
@@ -33,25 +86,55 @@ class HomePage(QWidget):
         super().__init__()
         self.setWindowTitle("My Job")
         self.setGeometry(100, 100, 1000, 500)
-        layout = QVBoxLayout()
 
+        # Layout pour organiser les éléments de la fenêtre
+        self.layout = QVBoxLayout(self)  # Utilisation d'un QVBoxLayout ici
+        self.setLayout(self.layout) 
+
+        # Ajouter le logo
+        self.add_logo_to_window("logo.jpg")  # Ajouter le logo (ajuste le chemin selon ton fichier)
+
+        # Ajouter le titre
         title = QLabel("Welcome to My Job!\nPlease sign up or login to continue.", self)
-        title.setFont(QFont('Arial', 20))
-
+        title.setFont(QFont('Arial', 60))
+        title.setAlignment(Qt.AlignCenter)  # Align the text to the center
+        # Ajouter les boutons
         presentation_button = QPushButton('Learn more about "My Job"?', self)
         sign_up_button = QPushButton('Sign Up', self)
         login_button = QPushButton('Login', self)
 
+        # Connexion des boutons à leurs fonctions
         presentation_button.clicked.connect(self.presentation)
         sign_up_button.clicked.connect(self.open_sign_up)
         login_button.clicked.connect(self.open_login)
 
-        layout.addWidget(title)
-        layout.addWidget(presentation_button)
-        layout.addWidget(sign_up_button)
-        layout.addWidget(login_button)
+       # Add the widgets to the layout
+        self.layout.addWidget(title)
+        self.layout.addWidget(presentation_button)
+        self.layout.addWidget(sign_up_button)
+        self.layout.addWidget(login_button)
 
-        self.setLayout(layout)
+        # Apply the layout to the window
+        self.setLayout(self.layout)
+
+    def add_logo_to_window(self, logo_path):
+        """Ajouter un logo à la fenêtre sans découper l'image"""
+        try:
+            # Charger l'image avec QPixmap
+            logo = QPixmap(logo_path)
+            
+            # Créer un QLabel pour l'afficher
+            logo_label = QLabel(self)
+            logo_label.setPixmap(logo)
+            logo_label.setAlignment(Qt.AlignCenter)  # Centrer l'image
+            
+            # Redimensionner l'image pour l'adapter à la taille du label, sans déformation
+            logo_label.setScaledContents(True)  # Permet de redimensionner sans découper
+            
+            # Ajouter l'image au layout
+            self.layout.addWidget(logo_label)
+        except Exception as e:
+            print(f"Erreur lors du chargement de l'image: {e}")
 
     def open_sign_up(self):
         self.signup_page = SignupPage()
@@ -80,7 +163,8 @@ class SignupPage(QWidget):
         layout = QVBoxLayout()
 
         title = QLabel("Please enter your information to sign up:", self)
-        title.setFont(QFont('Arial', 20))
+        title.setFont(QFont('Arial', 50))
+        title.setAlignment(Qt.AlignCenter)  # Align the text to the center
 
         self.name_input = QLineEdit(self)
         self.email_input = QLineEdit(self)
@@ -148,7 +232,8 @@ class LoginPage(QWidget):
         layout = QVBoxLayout()
 
         title = QLabel("Please enter your login information:", self)
-        title.setFont(QFont('Arial', 20))
+        title.setFont(QFont('Arial', 50))
+        title.setAlignment(Qt.AlignCenter)  # Align the text to the center
 
         self.email_input = QLineEdit(self)
         self.password_input = QLineEdit(self)
@@ -393,6 +478,7 @@ class JobsSearchPage(QWidget):
 # Run the application
 if __name__ == "__main__":
     app = QApplication(sys.argv)
+    apply_style(app)
     main_window = HomePage()
     main_window.show()
     sys.exit(app.exec_())

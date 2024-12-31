@@ -3,96 +3,12 @@ import psycopg2
 
 # Connection credentials
 DATABASE_CONFIG = {
-    "database": "db",
-    "user": "jass",
-    "host": "localhost",
-    "password": "Vomobdd23_"
+    "database": "l3info_78",
+    "user": "l3info_78",
+    "host": "10.11.11.22",
+    "password": "L3INFO_78"
 }
 
-def create_jobs_table():
-    try:
-        conn = psycopg2.connect(
-            dbname=DATABASE_CONFIG["database"],
-            user=DATABASE_CONFIG["user"],
-            password=DATABASE_CONFIG["password"],
-            host=DATABASE_CONFIG["host"]
-        )
-        with conn:
-            with conn.cursor() as cursor:
-                cursor.execute('''
-                    CREATE TABLE IF NOT EXISTS Jobs (
-                        job_ID numeric (10,0),
-                        designation text,
-                        company_id numeric(5,1),
-                        name text,
-                        work_type text,
-                        involvement text,
-                        employees_count numeric(5,0),
-                        total_applicants numeric(5,0),
-                        followers numeric,
-                        job_details text,
-                        details_id numeric(5,0),
-                        industry text,
-                        level text,
-                        City text,
-                        State text,
-                        PRIMARY KEY (job_ID)
-                    );
-                ''')
-        print("Table 'Jobs' created successfully or already exists.")
-    except psycopg2.Error as e:
-        print(f"An error occurred: {e}")
-    finally:
-        if conn:
-            conn.close()
-
-# function to verify if the jobs table is empty
-def is_jobs_table_empty():
-    try:
-        conn = psycopg2.connect(
-            dbname=DATABASE_CONFIG["database"],
-            user=DATABASE_CONFIG["user"],
-            password=DATABASE_CONFIG["password"],
-            host=DATABASE_CONFIG["host"]
-        )
-        cursor = conn.cursor()
-        cursor.execute("SELECT COUNT(*) FROM Jobs;") 
-        count = cursor.fetchone()[0] 
-        return count == 0 
-    
-    except Exception as e:
-        print(f"Error checking if jobs table is empty: {e}")
-        return True  
-
-    finally:
-        if cursor:
-            cursor.close()
-        if conn:
-            conn.close()
-
-
-def fill_jobs_table():
-    try:
-        conn = psycopg2.connect(
-            dbname=DATABASE_CONFIG["database"],
-            user=DATABASE_CONFIG["user"],
-            password=DATABASE_CONFIG["password"],
-            host=DATABASE_CONFIG["host"]
-        )
-        with conn:
-            with conn.cursor() as cursor:
-                # Read the SQL file
-                with open('jobs_data.sql', 'r') as file:
-                    sql_commands = file.read()
-                
-                # Execute the SQL commands
-                cursor.execute(sql_commands)
-                print("Jobs table filled successfully.")
-    except psycopg2.Error as e:
-        print(f"An error occurred: {e}")
-    finally:
-        if conn:
-            conn.close()
 
 # Function to search for jobs based on the search parameters
 #search_params: list of keywords
